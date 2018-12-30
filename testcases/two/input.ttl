@@ -1,0 +1,2 @@
+ex:foo ex:x _:A .
+_:A ex:y "P", "Q" .
