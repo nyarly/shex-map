@@ -4,7 +4,12 @@ require 'shex/extensions/extension'
 require 'pp'
 
 module ShExMap
-  class Extension < ShEx::Extension("http://shex.io/extensions/Map/")
+  EXTENSION_URL ="http://shex.io/extensions/Map/"
+  def self.generate_from(left, right, map)
+    left.extensions[EXTENSION_URL].generate(right, map)
+  end
+
+  class Extension < ShEx::Extension(EXTENSION_URL)
     def self.stringify(hash)
       string_prefixes = {}
       hash.each_pair do |k,v|
