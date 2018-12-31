@@ -131,7 +131,7 @@ describe ShExMap do
         expect(output).not_to be_nil
         expect(output).to have_same_statements_as(expected_graph)
       rescue ShEx::NotSatisfied => sns
-        pp sns, sns.expression
+        pp sns
         fail(sns)
       end
     end

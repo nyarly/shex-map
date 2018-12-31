@@ -30,6 +30,9 @@ module ShExMap
         @target_options = schema.options
 
         @variables = {}
+        @segments = Hash.new do |h,op|
+          h[op] = PathSegment.new(op)
+        end
 
         walk_op(@target, [])
 
@@ -50,7 +53,7 @@ module ShExMap
         if ShEx::Algebra::SemAct === oper
           ext, code = *oper.operands
           if ext == Extension.name
-            v = Variable.new(code, path.clone)
+            v = Variable.new(code, path.clone.map{|op| segment_for(op)})
             variables[v.name] = v
           end
         end
@@ -58,6 +61,10 @@ module ShExMap
         ops.each do |op|
           walk_op(op, path + [oper])
         end
+      end
+
+      def segment_for(op)
+        @segments[op]
       end
 
       def process(bindings)
@@ -87,7 +94,7 @@ module ShExMap
       attr :name, :path
       def initialize(code, path)
         @name = code.to_s
-        @path = path.map{|op| PathSegment.new(op)}
+        @path = path
       end
 
       def bind(binding, graph)
@@ -105,13 +112,20 @@ module ShExMap
     class PathSegment
       def initialize(operator)
         @operator = operator
+        @bnodes = Hash.new do |h,k|
+          h[k] = RDF::Node.new
+        end
+      end
+
+      def add_node(value, graph)
+        bnode = @bnodes[graph]
+        graph.insert(RDF::Statement.new(bnode, @operator.predicate, value))
+        bnode
       end
 
       def bind(value, graph)
         return value unless @operator.is_a? ShEx::Algebra::TripleConstraint
-        bnode = RDF::Node.new
-        graph.insert(RDF::Statement.new(bnode, @operator.predicate, value))
-        bnode
+        add_node(value, graph)
       end
     end
 
@@ -122,13 +136,10 @@ module ShExMap
 
       def bind(value, graph)
         graph.each_statement do |stmt|
-          pp stmt, value
           if stmt.subject == value
-            pp @root_iri
             graph.delete(stmt)
             stmt.subject = @root_iri
             graph.insert(stmt)
-            pp stmt
           end
         end
       end
@@ -140,7 +151,6 @@ module ShExMap
     def initialize(schema: nil, depth: 0, logger: nil, **options)
       @bindings = []
       @prefixes = Extension.stringify(schema.options[:prefixes])
-      p options
       super
     end
 
