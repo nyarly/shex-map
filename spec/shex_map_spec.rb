@@ -125,11 +125,22 @@ describe ShExMap do
     let(:right_shex) { ShEx.parse(File.read(right_shex_path), **parse_options) }
 
     context "loading testcases from 'testcases/#{testcase}'" do
-      specify ".generate_from" do
+      before do
         left_shex.execute(input_graph, {start_iri => left_shape})
+      end
+
+      specify ".generate_from" do
         output = ShExMap.generate_from(left_shex, right_shex, {target_iri => right_shape})
         expect(output).not_to be_nil
         expect(output).to have_same_statements_as(expected_graph)
+      rescue ShEx::NotSatisfied => sns
+        pp sns
+        fail(sns)
+      end
+
+      it "should validate against right shex" do
+        output = ShExMap.generate_from(left_shex, right_shex, {target_iri => right_shape})
+        right_shex.execute(output, {target_iri => right_shape})
       rescue ShEx::NotSatisfied => sns
         pp sns
         fail(sns)
