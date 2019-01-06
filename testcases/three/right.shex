@@ -1,0 +1,5 @@
+<http://b.example/S1> {
+  ex:a {
+    ex:b xsd:string %map: {ex:a%}
+  }+
+}

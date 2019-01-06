@@ -85,7 +85,6 @@ module ShExMap
       end
 
       def name
-        pp @prefixes
         @name ||= ShEx::Algebra::Operator.iri(@rawname.to_s, prefixes: @prefixes)
       end
     end
@@ -125,6 +124,7 @@ module ShExMap
 
       def bind(value, graph)
         return value unless @operator.is_a? ShEx::Algebra::TripleConstraint
+        p @operator
         add_node(value, graph)
       end
     end
@@ -156,22 +156,18 @@ module ShExMap
 
     # Called on entry to containing Triple Expression
     def exit(code: nil, matched: [], unmatched: [], depth: 0, **options)
-      p(:EXIT, c: code, m: matched, u: unmatched, d: depth)
     end
 
     # Called after shape completes on success or failure
     def close(schema: nil, depth: 0, **options)
-      p(:CLOSE, s: schema, d: depth)
     end
 
     # Called on entry to containing Triple Expression
     def enter(code: nil, arcs_in: nil, arcs_out: nil, depth: 0, **options)
-      p(:ENTER, c: code, in: arcs_in, out: arcs_out, d: depth, o: options)
     end
 
     # Called once for each matched statement
     def visit(code: nil, matched: nil, depth: 0, **options)
-      p(:VISIT, c: code, m: matched, d: depth, o: options)
       @bindings << Binding.new(@prefixes, code, matched.object)
       true
     end

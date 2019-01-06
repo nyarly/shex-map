@@ -1,0 +1,5 @@
+# Two child nodes, each with one value
+# vi:nomodeline:
+ex:bar ex:a _:Y, _:Z .
+_:Y ex:b "P" .
+_:Z ex:b "Q" .

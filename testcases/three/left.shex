@@ -1,4 +1,3 @@
-# vi:nomodeline:
 <http://a.example/S1> {
   ex:x {
     ex:y xsd:string+ %map: {ex:a%}
