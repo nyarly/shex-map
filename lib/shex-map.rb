@@ -108,24 +108,44 @@ module ShExMap
       end
     end
 
+    class NodeGenerator
+      def initialize(operator)
+        @operator = operator
+        @node = nil
+        @count = 0
+      end
+
+      def next
+        if @node.nil?
+          @node = RDF::Node.new
+        end
+
+        if @count >= @operator.maximum
+          @node = RDF::Node.new
+        end
+
+        @count+=1
+        return @node
+      end
+    end
+
     class PathSegment
       def initialize(operator)
         @operator = operator
         @bnodes = Hash.new do |h,k|
-          h[k] = RDF::Node.new
+          h[k] = NodeGenerator.new(operator)
         end
       end
 
-      def add_node(value, graph)
-        bnode = @bnodes[graph]
+      def add_edge(value, graph)
+        bnode = @bnodes[graph].next
         graph.insert(RDF::Statement.new(bnode, @operator.predicate, value))
         bnode
       end
 
       def bind(value, graph)
         return value unless @operator.is_a? ShEx::Algebra::TripleConstraint
-        p @operator
-        add_node(value, graph)
+        add_edge(value, graph)
       end
     end
 
