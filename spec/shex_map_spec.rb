@@ -146,6 +146,9 @@ describe ShExMap do
         fail(sns)
       end
 
+      # We _don't_ expect maps to be entirely bi-directional, but after one
+      # "pass" the resulting graphs should be.
+
       it "should be a well-behaved lens" do
         output = ShExMap.generate_from(left_shex, right_shex, {target_iri => right_shape})
         right_shex.execute(output, {target_iri => right_shape})
