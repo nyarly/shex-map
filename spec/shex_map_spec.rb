@@ -145,6 +145,18 @@ describe ShExMap do
         pp sns
         fail(sns)
       end
+
+      it "should be a well-behaved lens" do
+        output = ShExMap.generate_from(left_shex, right_shex, {target_iri => right_shape})
+        right_shex.execute(output, {target_iri => right_shape})
+        roundtrip = ShExMap.generate_from(right_shex, left_shex, {start_iri => left_shape})
+        left_shex.execute(roundtrip, {start_iri => left_shape})
+        second_output = ShExMap.generate_from(left_shex, right_shex, {target_iri => right_shape})
+        expect(second_output).to have_same_statements_as(expected_graph)
+      rescue ShEx::NotSatisfied => sns
+        pp sns
+        fail(sns)
+      end
     end
   end
 
