@@ -38,6 +38,7 @@ producing edges until it leads to the root.
   * Incompatible cardinalities
   * Nonsense casts?
   * Underconstrained targets (e.g. no variable for a value)
+  * Non-overlapping value constraints
 
 
 # License
