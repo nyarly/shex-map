@@ -1,0 +1,3 @@
+# vi:nomodeline:
+ex:bar ex:a _:Z .
+_:Z ex:b "P", "Q" .
