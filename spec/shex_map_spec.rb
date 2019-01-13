@@ -2,6 +2,22 @@ require 'logger'
 require 'shex-map'
 require 'rdf/turtle'
 
+class Thumb < Struct.new(:graph, :subject)
+  def value_at(predicate)
+    graph.query([subject, predicate, nil]).first.object
+  end
+
+  def walk(predicate)
+    Thumb.new(graph, graph.query([subject, predicate, nil]).first.object)
+  rescue
+    fail "No statement matches [#{subject}, #{predicate}, nil]"
+  end
+
+  def statements_about
+    graph.query([subject, nil, nil]).to_a
+  end
+end
+
 RSpec::Matchers.define :have_same_statements_as do |expected|
   def as_triples(graph)
     RDF::Writer.for(:ntriples).buffer do |w|
@@ -184,36 +200,10 @@ describe ShExMap do
     end
   end
 
-  class Thumb < Struct.new(:graph, :subject)
-    def value_at(predicate)
-      graph.query([subject, predicate, nil]).first.object
-    end
-
-    def walk(predicate)
-      Thumb.new(graph, graph.query([subject, predicate, nil]).first.object)
-    rescue
-      fail "No statement matches [#{subject}, #{predicate}, nil]"
-    end
-
-    def statements_about
-      graph.query([subject, nil, nil]).to_a
-    end
-  end
-
-
-
   entries = testcases.query([RDF::URI.new("./testcases/"), mf[:entries], nil]).first.object
   entries = RDF::List.new(graph: testcases, subject: entries)
   entries.each do |entry|
     thumb = Thumb.new(testcases, entry)
     it_should_behave_like "shex-map", thumb.value_at(mf[:name]).to_s, thumb.walk(mf[:action])
   end
-
-#  Dir.open("testcases") do |tc_dir|
-#    tc_dir.each do |name|
-#      next if /^\./ =~ name
-#      FileTest.directory?("testcases/#{name}")
-#      it_should_behave_like "shex-map", name
-#    end
-#  end
 end
