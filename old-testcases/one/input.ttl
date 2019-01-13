@@ -1,2 +1,0 @@
-# vi:nomodeline:
-ex:foo ex:x "P".
