@@ -110,7 +110,7 @@ describe ShExMap do
   end
 
 
-  shared_examples "shex-map" do |testcase, config|
+  shared_examples "round trip" do |testcase, config|
     include_context "common configuration"
 
     let(:left_shex_path) do
@@ -204,6 +204,13 @@ describe ShExMap do
   entries = RDF::List.new(graph: testcases, subject: entries)
   entries.each do |entry|
     thumb = Thumb.new(testcases, entry)
-    it_should_behave_like "shex-map", thumb.value_at(mf[:name]).to_s, thumb.walk(mf[:action])
+    next if thumb.value_at(mf[:result]) == mf[:rejected]
+    action = thumb.walk(mf[:action])
+    case action.value_at(t[:kind])
+    when t[:RoundTrip]
+      it_should_behave_like "round trip", thumb.value_at(mf[:name]).to_s, thumb.walk(mf[:action])
+    else
+      puts "Unknown kind of test: #{t[:kind]}"
+    end
   end
 end
