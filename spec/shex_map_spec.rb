@@ -18,6 +18,16 @@ class Thumb < Struct.new(:graph, :subject)
   end
 end
 
+class FixedShapeMap < Struct.new(:node, :shape)
+  RE = %r{<(?<node>[^>]+)>@<(?<shape>[^>]+)>}
+  def self.parse(string)
+    # small subset of the complete grammar
+    m = RE.match(string)
+    raise "Invalid map: #{string}" if m.nil?
+    return new(m[:node], m[:shape])
+  end
+end
+
 RSpec::Matchers.define :have_same_statements_as do |expected|
   def as_triples(graph)
     RDF::Writer.for(:ntriples).buffer do |w|
@@ -66,10 +76,6 @@ RSpec::Matchers.define :have_same_statements_as do |expected|
 end
 
 describe ShExMap do
-  mf = RDF::Vocabulary.new("http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#")
-  t = RDF::Vocabulary.new("https://raw.githubusercontent.com/shexSpec/shexmapTest/master/testcase.ttl#")
-
-
   shared_context "common configuration" do
     let(:map_iri) { RDF::URI.new("http://shex.io/extensions/Map/") }
     let(:prefixes) do
@@ -110,37 +116,36 @@ describe ShExMap do
   end
 
 
-  shared_examples "round trip" do |testcase, config|
+  shared_examples "round trip" do |testcase, basepath, config|
     include_context "common configuration"
 
     let(:left_shex_path) do
-      config.walk(t[:left]).value_at(t[:source]).to_s
+      File.join(basepath, config['schemaURL'])
     end
     let(:left_shape) do
-      config.walk(t[:left]).value_at(t[:shape])
+      RDF::URI.new(FixedShapeMap.parse(config['queryMap']).shape)
     end
 
     let(:right_shex_path) do
-      config.walk(t[:right]).value_at(t[:source]).to_s
+      File.join(basepath, config['shexMapTo']['schemaURL'])
     end
     let(:right_shape) do
-      config.walk(t[:right]).value_at(t[:shape])
+      RDF::URI.new(FixedShapeMap.parse(config['shexMapTo']['queryMap']).shape)
     end
 
     let(:input_graph_path) do
-      config.walk(t[:start]).value_at(t[:source]).to_s
+      File.join(basepath, config['dataURL'])
     end
     let(:start_iri) do
-      config.walk(t[:start]).value_at(t[:focus])
+      RDF::URI.new(FixedShapeMap.parse(config['queryMap']).node)
     end
 
     let(:expected_graph_path) do
-      config.walk(t[:target]).value_at(t[:source]).to_s
+      File.join(basepath, config['shexMapTo']['dataURL'])
     end
     let(:target_iri) do
-      config.walk(t[:target]).value_at(t[:focus])
+      RDF::URI.new(FixedShapeMap.parse(config['shexMapTo']['queryMap']).node)
     end
-
 
     let(:input_graph) do
       load_turtle(input_graph_path)
@@ -156,15 +161,15 @@ describe ShExMap do
     context testcase do
       before do
         left_shex.execute(input_graph, {start_iri => left_shape})
+      rescue ShEx::NotSatisfied => sns
+        pp sns
+        fail(sns)
       end
 
       specify ".generate_from" do
         output = ShExMap.generate_from(left_shex, right_shex, {target_iri => right_shape})
         expect(output).not_to be_nil
         expect(output).to have_same_statements_as(expected_graph)
-      rescue ShEx::NotSatisfied => sns
-        pp sns
-        fail(sns)
       end
 
       it "should validate against right shex" do
@@ -192,25 +197,11 @@ describe ShExMap do
     end
   end
 
-  testcases = RDF::Graph.new
-
-  RDF::Reader.open('testcases/manifest.ttl', base_uri: "./testcases/") do |r|
-    r.each_statement do |stmt|
-      testcases.insert(stmt)
-    end
+  entries = File::open('testcases/manifest.json') do |tc|
+    JSON.parse(tc.read)
   end
 
-  entries = testcases.query([RDF::URI.new("./testcases/"), mf[:entries], nil]).first.object
-  entries = RDF::List.new(graph: testcases, subject: entries)
   entries.each do |entry|
-    thumb = Thumb.new(testcases, entry)
-    next if thumb.value_at(mf[:result]) == mf[:rejected]
-    action = thumb.walk(mf[:action])
-    case action.value_at(t[:kind])
-    when t[:RoundTrip]
-      it_should_behave_like "round trip", thumb.value_at(mf[:name]).to_s, thumb.walk(mf[:action])
-    else
-      puts "Unknown kind of test: #{t[:kind]}"
-    end
+    it_should_behave_like "round trip", entry['schemaLabel'], './testcases', entry
   end
 end
