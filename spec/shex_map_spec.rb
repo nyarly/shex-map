@@ -2,22 +2,6 @@ require 'logger'
 require 'shex-map'
 require 'rdf/turtle'
 
-class Thumb < Struct.new(:graph, :subject)
-  def value_at(predicate)
-    graph.query([subject, predicate, nil]).first.object
-  end
-
-  def walk(predicate)
-    Thumb.new(graph, graph.query([subject, predicate, nil]).first.object)
-  rescue
-    fail "No statement matches [#{subject}, #{predicate}, nil]"
-  end
-
-  def statements_about
-    graph.query([subject, nil, nil]).to_a
-  end
-end
-
 class FixedShapeMap < Struct.new(:node, :shape)
   RE = %r{<(?<node>[^>]+)>@<(?<shape>[^>]+)>}
   def self.parse(string)
@@ -162,7 +146,8 @@ describe ShExMap do
       before do
         left_shex.execute(input_graph, {start_iri => left_shape})
       rescue ShEx::NotSatisfied => sns
-        pp sns
+        dump_graph(input_graph)
+        pp "execute left", [left_shex_path, input_graph_path, {start_iri => left_shape}], sns
         fail(sns)
       end
 
@@ -176,7 +161,8 @@ describe ShExMap do
         output = ShExMap.generate_from(left_shex, right_shex, {target_iri => right_shape})
         right_shex.execute(output, {target_iri => right_shape})
       rescue ShEx::NotSatisfied => sns
-        pp sns
+        dump_graph(output)
+        pp "validating right", [left_shex_path, input_graph_path, {start_iri => left_shape}], sns
         fail(sns)
       end
 
@@ -191,7 +177,8 @@ describe ShExMap do
         second_output = ShExMap.generate_from(left_shex, right_shex, {target_iri => right_shape})
         expect(second_output).to have_same_statements_as(expected_graph)
       rescue ShEx::NotSatisfied => sns
-        pp sns
+        dump_graph(roundtrip)
+        pp "return left", [left_shex_path, input_graph_path, {start_iri => left_shape}], sns
         fail(sns)
       end
     end

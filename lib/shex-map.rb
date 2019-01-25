@@ -139,7 +139,11 @@ module ShExMap
 
       def add_edge(value, graph)
         bnode = @bnodes[graph].next
-        graph.insert(RDF::Statement.new(bnode, @operator.predicate, value))
+        if @operator.inverse?
+          graph.insert(RDF::Statement.new(value, @operator.predicate, bnode))
+        else
+          graph.insert(RDF::Statement.new(bnode, @operator.predicate, value))
+        end
         bnode
       end
 
@@ -159,6 +163,11 @@ module ShExMap
           if stmt.subject == value
             graph.delete(stmt)
             stmt.subject = @root_iri
+            graph.insert(stmt)
+          end
+          if stmt.object == value
+            graph.delete(stmt)
+            stmt.object = @root_iri
             graph.insert(stmt)
           end
         end
