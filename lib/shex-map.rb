@@ -183,20 +183,23 @@ module ShExMap
       super
     end
 
-    # Called on entry to containing Triple Expression
-    def exit(code: nil, matched: [], unmatched: [], depth: 0, **options)
-    end
-
     # Called after shape completes on success or failure
     def close(schema: nil, depth: 0, **options)
     end
 
     # Called on entry to containing Triple Expression
     def enter(code: nil, arcs_in: nil, arcs_out: nil, depth: 0, **options)
+      p ENTER: { code: code, depth: 0 }
+    end
+
+    # Called on entry to containing Triple Expression
+    def exit(code: nil, matched: [], unmatched: [], depth: 0, **options)
+      p EXIT: { code: code, depth: 0 }
     end
 
     # Called once for each matched statement
     def visit(code: nil, matched: nil, depth: 0, **options)
+      p VISIT: { code: code, depth: 0 }
       @bindings << Binding.new(@prefixes, code, matched.object)
       true
     end
